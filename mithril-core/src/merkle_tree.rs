@@ -123,7 +123,7 @@ impl<D: Digest + Clone> Path<D> {
     }
 }
 
-impl<D: Clone + Digest> MerkleTreeCommitment<D> {
+impl<D: Clone + Digest + Send + Sync> MerkleTreeCommitment<D> {
     /// Check an inclusion proof that `val` is part of the tree by traveling the whole path until the root.
     /// # Error
     /// If the merkle tree path is invalid, then the function fails.

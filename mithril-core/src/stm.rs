@@ -223,7 +223,8 @@ pub struct StmAggrVerificationKey<D: Clone + Digest> {
     deserialize = "Path<D>: Deserialize<'de>"
 ))]
 pub struct StmAggrSig<D: Clone + Digest> {
-    pub(crate) signatures: Vec<StmSig<D>>,
+    /// todo: this should not be public. Temp for benches
+    pub signatures: Vec<StmSig<D>>,
 }
 
 impl StmParameters {
@@ -351,7 +352,7 @@ impl StmInitializer {
     }
 }
 
-impl<D: Clone + Digest> StmSigner<D> {
+impl<D: Clone + Digest + Send + Sync> StmSigner<D> {
     /// This function produces a signature following the description of Section 2.4.
     /// Once the signature is produced, this function checks whether any index in `[0,..,self.params.m]`
     /// wins the lottery by evaluating the dense mapping.
@@ -533,7 +534,7 @@ impl<D: Clone + Digest> StmSigner<D> {
     }
 }
 
-impl<D: Digest + Clone> StmClerk<D> {
+impl<D: Digest + Clone + Send + Sync> StmClerk<D> {
     /// Create a new `Clerk` from a closed registration instance.
     pub fn from_registration(params: &StmParameters, closed_reg: &ClosedKeyReg<D>) -> Self {
         Self {
@@ -653,7 +654,7 @@ impl<D: Digest + Clone> StmClerk<D> {
     }
 }
 
-impl<D: Clone + Digest> StmSig<D> {
+impl<D: Clone + Digest + Send + Sync> StmSig<D> {
     /// Verify an stm signature by checking that the lottery was won, the merkle path is correct,
     /// the indexes are in the desired range and the underlying multi signature validates.
     pub fn verify(
@@ -765,7 +766,7 @@ impl<D: Clone + Digest> From<&ClosedKeyReg<D>> for StmAggrVerificationKey<D> {
     }
 }
 
-impl<D: Clone + Digest> StmAggrSig<D> {
+impl<D: Clone + Digest + Send + Sync> StmAggrSig<D> {
     /// Verify all checks from signatures, except for the signature verification itself.
     fn preliminary_verify(
         &self,
