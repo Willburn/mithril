@@ -79,7 +79,7 @@ impl SigningKey {
 /// MultiSig verification key, which is a wrapper over the BlstVk (element in G2)
 /// from the blst library.
 #[derive(Debug, Clone, Copy, Default)]
-pub struct VerificationKey(pub BlstVk);
+pub struct VerificationKey(BlstVk);
 
 impl Display for VerificationKey {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -328,7 +328,7 @@ impl ProofOfPossession {
 
 /// MultiSig signature, which is a wrapper over the `BlstSig` type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Signature(pub BlstSig);
+pub struct Signature(BlstSig);
 
 impl<'a> Sum<&'a Self> for Signature {
     fn sum<I>(iter: I) -> Self
@@ -412,13 +412,13 @@ impl Signature {
     pub fn aggregate(
         vks: &[VerificationKey],
         sigs: &[Signature],
-    ) -> Result<(BlstVk, BlstSig), MultiSignatureError> {
+    ) -> Result<(VerificationKey, Signature), MultiSignatureError> {
         if vks.len() != sigs.len() || vks.is_empty() {
             return Err(MultiSignatureError::AggregateSignatureInvalid);
         }
 
         if vks.len() < 2 {
-            return Ok((vks[0].0, sigs[0].0));
+            return Ok((vks[0], sigs[0]));
         }
 
         let mut hashed_sigs = Blake2b::<U16>::new();
@@ -474,7 +474,7 @@ impl Signature {
             std::mem::transmute::<blst_p1_affine, BlstSig>(affine_p1)
         };
 
-        Ok((aggr_vk, aggr_sig))
+        Ok((VerificationKey(aggr_vk), Signature(aggr_sig)))
     }
 
     /// Verify a set of signatures with their corresponding verification keys using the
@@ -487,8 +487,8 @@ impl Signature {
         let (aggr_vk, aggr_sig) = Self::aggregate(vks, sigs)?;
 
         blst_err_to_mithril(
-            aggr_sig.verify(false, msg, &[], &[], &aggr_vk, false),
-            Some(Signature(aggr_sig)),
+            aggr_sig.0.verify(false, msg, &[], &[], &aggr_vk.0, false),
+            Some(aggr_sig),
         )
     }
 
@@ -726,8 +726,8 @@ mod tests {
                 assert!(Signature::verify_aggregate(&msg, &mvks, &sigs).is_ok());
                 let (agg_vk, agg_sig) = Signature::aggregate(&mvks, &sigs).unwrap();
                 batch_msgs.push(msg.to_vec());
-                batch_vk.push(VerificationKey(agg_vk));
-                batch_sig.push(Signature(agg_sig));
+                batch_vk.push(agg_vk);
+                batch_sig.push(agg_sig);
             }
             assert!(Signature::batch_verify_aggregates(&batch_msgs, &batch_vk, &batch_sig).is_ok());
 
