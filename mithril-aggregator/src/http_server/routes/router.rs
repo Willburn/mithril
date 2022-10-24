@@ -3,6 +3,7 @@ use crate::http_server::routes::{
 };
 use crate::http_server::SERVER_BASE_PATH;
 use crate::DependencyManager;
+use reqwest::header::{HeaderMap, HeaderValue};
 use std::sync::Arc;
 use warp::http::Method;
 use warp::Filter;
@@ -15,6 +16,8 @@ pub fn routes(
         .allow_any_origin()
         .allow_headers(vec!["content-type"])
         .allow_methods(vec![Method::GET, Method::POST, Method::OPTIONS]);
+    let mut headers = HeaderMap::new();
+    headers.insert("mithril-api-version", HeaderValue::from_static("0.1.0"));
 
     warp::any().and(warp::path(SERVER_BASE_PATH)).and(
         certificate_routes::routes(dependency_manager.clone())
@@ -22,6 +25,7 @@ pub fn routes(
             .or(signer_routes::routes(dependency_manager.clone()))
             .or(signatures_routes::routes(dependency_manager.clone()))
             .or(epoch_routes::routes(dependency_manager))
-            .with(cors),
+            .with(cors)
+            .with(warp::reply::with::headers(headers)),
     )
 }
