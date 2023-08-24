@@ -539,6 +539,12 @@ With this configuration, the proxy will:
 - anonymize completely the traffic and avoid disclosing any information about the block-producing machine
 - deny all other traffic
 
+Reload the service configuration (optional):
+
+```bash
+sudo systemctl daemon-reload
+```
+
 Restart the service:
 
 ```bash
